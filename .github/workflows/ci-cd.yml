@@ -1,0 +1,205 @@
+name: CI, security, and test deployment
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eduprestamo-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22.13.1"
+  APP_IMAGE: eduprestamo:${{ github.sha }}
+  APP_PORT: "3000"
+
+jobs:
+  quality:
+    name: Lint and Jest coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run Jest with an 80 percent global threshold
+        run: >-
+          npm run test:coverage -- --ci
+          --coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80,"statements":80}}'
+
+      - name: Upload Jest coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jest-coverage-${{ github.run_id }}
+          path: reports/coverage/
+          if-no-files-found: warn
+          retention-days: 30
+
+  container_security:
+    name: Build, ephemeral deployment, and ZAP
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Build application artifact
+        run: npm run build
+
+      - name: Build production container
+        run: docker build --tag "${APP_IMAGE}" .
+
+      - name: Generate an ephemeral CI signing secret
+        shell: bash
+        run: |
+          ci_jwt_secret="$(openssl rand -hex 32)"
+          echo "::add-mask::${ci_jwt_secret}"
+          printf 'CI_JWT_SECRET=%s\n' "${ci_jwt_secret}" >> "${GITHUB_ENV}"
+
+      - name: Start isolated test deployment and verify health
+        shell: bash
+        run: |
+          mkdir -p reports/deployment
+          docker network create eduprestamo-ci
+          docker run --detach \
+            --name eduprestamo-app \
+            --network eduprestamo-ci \
+            --env NODE_ENV=test \
+            --env PORT="${APP_PORT}" \
+            --env JWT_SECRET="${CI_JWT_SECRET}" \
+            --env DATABASE_PATH=/app/data/ci.sqlite \
+            --env CORS_ORIGIN=same-origin \
+            --tmpfs /app/data:rw,noexec,nosuid,size=64m,mode=1777 \
+            --tmpfs /tmp:rw,noexec,nosuid,size=64m,mode=1777 \
+            --publish "${APP_PORT}:${APP_PORT}" \
+            "${APP_IMAGE}"
+
+          for attempt in {1..30}; do
+            container_state="$(docker inspect --format '{{.State.Status}}' eduprestamo-app)"
+            health_state="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' eduprestamo-app)"
+
+            if [[ "${health_state}" == "healthy" ]]; then
+              curl --fail --silent --show-error \
+                "http://127.0.0.1:${APP_PORT}/health" \
+                | tee reports/deployment/health-response.json
+              docker inspect eduprestamo-app > reports/deployment/container-inspect.json
+              exit 0
+            fi
+
+            if [[ "${container_state}" == "exited" || "${container_state}" == "dead" ]]; then
+              docker logs eduprestamo-app
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          docker logs eduprestamo-app
+          exit 1
+
+      - name: Run OWASP ZAP full scan
+        env:
+          ZAP_TARGET_URL: http://eduprestamo-app:3000
+          ZAP_DOCKER_NETWORK: eduprestamo-ci
+          ZAP_SPIDER_MINUTES: "2"
+        run: bash security/zap/run-zap.sh
+
+      - name: Upload ZAP and deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devsecops-evidence-${{ github.run_id }}
+          path: |
+            reports/security/zap/
+            reports/deployment/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Stop isolated test deployment
+        if: always()
+        shell: bash
+        run: |
+          docker rm --force eduprestamo-app 2>/dev/null || true
+          docker network rm eduprestamo-ci 2>/dev/null || true
+
+  sonar:
+    name: Configurable Sonar analysis
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Jest coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: jest-coverage-${{ github.run_id }}
+          path: reports/coverage
+
+      - name: Explain optional analysis when no token is configured
+        if: env.SONAR_TOKEN == ''
+        run: >-
+          echo "SONAR_TOKEN is not configured; the required lint, test, build,
+          ephemeral deployment, and ZAP jobs remain independent of Sonar secrets."
+
+      - name: Validate Sonar endpoint selection
+        if: >-
+          env.SONAR_TOKEN != '' &&
+          vars.SONAR_ORGANIZATION == '' &&
+          vars.SONAR_HOST_URL == ''
+        run: |
+          echo "Set SONAR_ORGANIZATION for SonarCloud or SONAR_HOST_URL for self-hosted SonarQube." >&2
+          exit 1
+
+      - name: Analyze with SonarCloud
+        if: env.SONAR_TOKEN != '' && vars.SONAR_ORGANIZATION != ''
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: >-
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'eduprestamo' }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+
+      - name: Analyze with self-hosted SonarQube
+        if: >-
+          env.SONAR_TOKEN != '' &&
+          vars.SONAR_ORGANIZATION == '' &&
+          vars.SONAR_HOST_URL != ''
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          args: >-
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY || 'eduprestamo' }}

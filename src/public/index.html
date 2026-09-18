@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b675b" />
+    <meta
+      name="description"
+      content="EduPréstamo, sistema escolar para consultar y administrar el préstamo de recursos educativos."
+    />
+    <title>EduPréstamo</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+    <section id="auth-view" class="auth-view" aria-labelledby="login-title">
+      <div class="auth-backdrop" aria-hidden="true"></div>
+      <div class="auth-layout">
+        <div class="auth-intro">
+          <a class="brand brand--light" href="/" aria-label="EduPréstamo, inicio">
+            <span class="brand__mark" aria-hidden="true">
+              <svg viewBox="0 0 40 40" focusable="false">
+                <path d="M8 10.5c4.5 0 8.5 1.4 12 4.2 3.5-2.8 7.5-4.2 12-4.2v20c-4.4 0-8.4 1.2-12 3.6-3.6-2.4-7.6-3.6-12-3.6z" />
+                <path d="M20 14.7v19.4" />
+              </svg>
+            </span>
+            <span>EduPréstamo</span>
+          </a>
+
+          <div class="auth-intro__content">
+            <p class="eyebrow eyebrow--light">Recursos escolares bien organizados</p>
+            <h1>Cada recurso, en el lugar correcto</h1>
+            <p>
+              Consulta la disponibilidad, solicita materiales y conserva un historial claro de
+              cada préstamo desde un solo lugar.
+            </p>
+            <ul class="feature-list" aria-label="Beneficios principales">
+              <li>
+                <span class="feature-list__icon" aria-hidden="true">01</span>
+                <span><strong>Disponibilidad real</strong> antes de acudir por un material.</span>
+              </li>
+              <li>
+                <span class="feature-list__icon" aria-hidden="true">02</span>
+                <span><strong>Seguimiento completo</strong> desde la solicitud hasta la devolución.</span>
+              </li>
+              <li>
+                <span class="feature-list__icon" aria-hidden="true">03</span>
+                <span><strong>Acceso por rol</strong> para usuarios y personal administrador.</span>
+              </li>
+            </ul>
+          </div>
+
+          <p class="auth-intro__foot">Prototipo académico de Ingeniería de Software</p>
+        </div>
+
+        <div class="auth-panel">
+          <div class="login-card">
+            <div class="login-card__heading">
+              <p class="eyebrow">Acceso seguro</p>
+              <h2 id="login-title">Inicia sesión</h2>
+              <p>Usa tu cuenta institucional para continuar.</p>
+            </div>
+
+            <div id="login-error" class="alert alert--error" role="alert" hidden></div>
+
+            <form id="login-form" method="post" action="/api/auth/login" novalidate>
+              <div class="field">
+                <label for="login-email">Correo electrónico</label>
+                <input
+                  id="login-email"
+                  name="email"
+                  type="email"
+                  autocomplete="username"
+                  inputmode="email"
+                  placeholder="nombre@eduprestamo.local"
+                  required
+                />
+                <p class="field__error" data-error-for="email"></p>
+              </div>
+
+              <div class="field">
+                <label for="login-password">Contraseña</label>
+                <div class="password-field">
+                  <input
+                    id="login-password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="Ingresa tu contraseña"
+                    required
+                  />
+                  <button
+                    id="toggle-password"
+                    class="icon-button icon-button--inside"
+                    type="button"
+                    aria-label="Mostrar contraseña"
+                    aria-pressed="false"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                      <circle cx="12" cy="12" r="2.5" />
+                    </svg>
+                  </button>
+                </div>
+                <p class="field__error" data-error-for="password"></p>
+              </div>
+
+              <button id="login-submit" class="button button--primary button--wide" type="submit">
+                <span class="button__label">Entrar al sistema</span>
+                <span class="button__spinner" aria-hidden="true"></span>
+              </button>
+            </form>
+
+            <section class="demo-access" aria-labelledby="demo-title">
+              <div class="demo-access__heading">
+                <span class="demo-access__icon" aria-hidden="true">D</span>
+                <div>
+                  <h3 id="demo-title">Accesos para la demostración</h3>
+                  <p>Selecciona una cuenta para completar el formulario.</p>
+                </div>
+              </div>
+              <div class="demo-access__options">
+                <button
+                  class="demo-credential"
+                  type="button"
+                  data-demo-email="usuario@eduprestamo.local"
+                  data-demo-password="Usuario123!"
+                >
+                  <span>
+                    <strong>Usuario</strong>
+                    <small>usuario@eduprestamo.local</small>
+                  </span>
+                  <code>Usuario123!</code>
+                </button>
+                <button
+                  class="demo-credential"
+                  type="button"
+                  data-demo-email="admin@eduprestamo.local"
+                  data-demo-password="Admin123!"
+                >
+                  <span>
+                    <strong>Administrador</strong>
+                    <small>admin@eduprestamo.local</small>
+                  </span>
+                  <code>Admin123!</code>
+                </button>
+              </div>
+            </section>
+
+            <p class="security-note">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10M6 10h12v10H6z" />
+              </svg>
+              La sesión utiliza un token JWT y permisos según el rol asignado.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="app-shell" class="app-shell" hidden>
+      <div id="sidebar-scrim" class="sidebar-scrim" aria-hidden="true"></div>
+      <aside id="sidebar" class="sidebar" aria-label="Navegación principal">
+        <div class="sidebar__top">
+          <a class="brand" href="#catalogo" aria-label="EduPréstamo, catálogo">
+            <span class="brand__mark" aria-hidden="true">
+              <svg viewBox="0 0 40 40" focusable="false">
+                <path d="M8 10.5c4.5 0 8.5 1.4 12 4.2 3.5-2.8 7.5-4.2 12-4.2v20c-4.4 0-8.4 1.2-12 3.6-3.6-2.4-7.6-3.6-12-3.6z" />
+                <path d="M20 14.7v19.4" />
+              </svg>
+            </span>
+            <span>EduPréstamo</span>
+          </a>
+          <button id="close-sidebar" class="icon-button sidebar__close" type="button" aria-label="Cerrar menú">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
+
+        <nav class="nav" aria-label="Secciones de EduPréstamo">
+          <p class="nav__label">Mi espacio</p>
+          <a class="nav__item" href="#catalogo" data-route="catalogo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v14H4zM8 5.5v14M4 10h16" /></svg>
+            <span>Catálogo</span>
+          </a>
+          <a class="nav__item" href="#mis-prestamos" data-route="mis-prestamos">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" /></svg>
+            <span>Mis préstamos</span>
+          </a>
+
+          <div id="admin-navigation" hidden>
+            <p class="nav__label">Administración</p>
+            <a class="nav__item" href="#resumen" data-route="resumen">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h6v7H4zM14 4h6v16h-6zM4 4h6v5H4z" /></svg>
+              <span>Resumen</span>
+            </a>
+            <a class="nav__item" href="#recursos" data-route="recursos">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 8 8-4 8 4-8 4zM4 8v8l8 4 8-4V8M12 12v8" /></svg>
+              <span>Recursos</span>
+            </a>
+            <a class="nav__item" href="#solicitudes" data-route="solicitudes">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v3h3v13H4V7h3zM8 12h8M8 16h5" /></svg>
+              <span>Solicitudes</span>
+              <span id="pending-nav-count" class="nav__count" hidden>0</span>
+            </a>
+          </div>
+        </nav>
+
+        <div class="sidebar__footer">
+          <div id="connection-status" class="connection-status" role="status">
+            <span class="connection-status__dot" aria-hidden="true"></span>
+            <span>Con conexión</span>
+          </div>
+          <p>Versión de demostración 1.0</p>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div class="topbar__leading">
+            <button id="open-sidebar" class="icon-button topbar__menu" type="button" aria-label="Abrir menú">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+            </button>
+            <div>
+              <p id="topbar-context" class="topbar__context">Sistema de recursos escolares</p>
+              <p class="topbar__date" id="today-label"></p>
+            </div>
+          </div>
+
+          <div class="user-menu">
+            <div id="user-avatar" class="avatar" aria-hidden="true">U</div>
+            <div class="user-menu__identity">
+              <strong id="user-name">Usuario</strong>
+              <span id="user-role">Usuario</span>
+            </div>
+            <button id="logout-button" class="button button--ghost button--compact" type="button">
+              Cerrar sesión
+            </button>
+          </div>
+        </header>
+
+        <main id="main-content" class="main-content" tabindex="-1">
+          <header class="page-heading">
+            <div>
+              <p id="page-eyebrow" class="eyebrow">EduPréstamo</p>
+              <h1 id="page-title">Catálogo</h1>
+              <p id="page-description"></p>
+            </div>
+            <div id="page-actions" class="page-heading__actions"></div>
+          </header>
+
+          <div id="page-feedback" aria-live="polite"></div>
+          <section id="page-content" aria-live="polite" aria-busy="false"></section>
+        </main>
+      </div>
+    </div>
+
+    <dialog id="app-dialog" class="dialog" aria-labelledby="dialog-title">
+      <form id="dialog-form" method="dialog" novalidate>
+        <div class="dialog__header">
+          <div>
+            <p id="dialog-eyebrow" class="eyebrow">EduPréstamo</p>
+            <h2 id="dialog-title">Acción</h2>
+            <p id="dialog-description"></p>
+          </div>
+          <button class="icon-button" type="button" data-dialog-close aria-label="Cerrar ventana">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
+        <div id="dialog-alert" class="alert alert--error" role="alert" hidden></div>
+        <div id="dialog-content" class="dialog__content"></div>
+        <div class="dialog__actions">
+          <button class="button button--ghost" type="button" data-dialog-close>Cancelar</button>
+          <button id="dialog-submit" class="button button--primary" type="submit">
+            <span class="button__label">Guardar</span>
+            <span class="button__spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+    <noscript>
+      <div class="noscript-message">
+        EduPréstamo necesita JavaScript para funcionar. Actívalo y vuelve a cargar la página.
+      </div>
+    </noscript>
+  </body>
+</html>

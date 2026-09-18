@@ -1,0 +1,59 @@
+{
+  "name": "eduprestamo",
+  "version": "1.0.0",
+  "description": "Sistema escolar para gestionar el prestamo de recursos educativos.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "build": "node scripts/build.js",
+    "seed:admin": "node src/seed.js admin",
+    "seed:demo": "node src/seed.js demo",
+    "lint": "eslint src tests scripts",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
+    "check": "npm run lint && npm run test:coverage"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "eslint": "^9.35.0",
+    "globals": "^16.3.0",
+    "jest": "^30.1.3",
+    "supertest": "^7.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "clearMocks": true,
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/server.js",
+      "!src/seed.js",
+      "!src/public/**"
+    ],
+    "coverageDirectory": "reports/coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "json-summary",
+      "html"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
+  }
+}

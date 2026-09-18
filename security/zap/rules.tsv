@@ -1,0 +1,10 @@
+# Alert ID	Action	Reason
+# XSS and SQL injection findings block the EduPrestamo test release.
+40012	FAIL	Reflected cross-site scripting
+40014	FAIL	Persistent cross-site scripting
+40016	FAIL	Persistent cross-site scripting (prime)
+40017	FAIL	Persistent cross-site scripting (spider)
+40018	FAIL	SQL injection
+# Expected observations in the isolated local test environment.
+10106	INFO	HTTP is accepted only for the local Docker test target; production requires TLS termination
+10202	IGNORE	The JSON API uses bearer JWTs in Authorization and does not use ambient cookie authentication
