@@ -1,0 +1,23 @@
+{
+  "task": {
+    "id": "a5170598-cfac-42ca-a47c-cfff732fb697",
+    "type": "REPORT",
+    "componentId": "ed2c26b7-07be-451a-97d3-86b2595be952",
+    "componentKey": "eduprestamo",
+    "componentName": "EduPrestamo",
+    "componentQualifier": "TRK",
+    "analysisId": "8cec5ea8-496e-4905-9e31-6d2f5b43fa1f",
+    "status": "SUCCESS",
+    "submittedAt": "2026-09-18T22:33:29+0000",
+    "submitterLogin": "admin",
+    "startedAt": "2026-09-18T22:33:30+0000",
+    "executedAt": "2026-09-18T22:33:47+0000",
+    "executionTimeMs": 16901,
+    "hasScannerContext": true,
+    "warningCount": 1,
+    "warnings": [
+      "SCM provider autodetection failed. Please use \"sonar.scm.provider\" to define SCM of your project, or disable the SCM Sensor in the project settings."
+    ],
+    "infoMessages": []
+  }
+}

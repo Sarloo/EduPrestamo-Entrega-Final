@@ -1,0 +1,6 @@
+projectKey=eduprestamo
+serverUrl=http://host.docker.internal:9001
+serverVersion=10.6.0.92116
+dashboardUrl=http://host.docker.internal:9001/dashboard?id=eduprestamo
+ceTaskId=a5170598-cfac-42ca-a47c-cfff732fb697
+ceTaskUrl=http://host.docker.internal:9001/api/ce/task?id=a5170598-cfac-42ca-a47c-cfff732fb697

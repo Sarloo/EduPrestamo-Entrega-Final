@@ -1,0 +1,119 @@
+{
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 500,
+    "total": 4
+  },
+  "hotspots": [
+    {
+      "key": "99fbb34b-7dd8-47b3-bf14-78f5f3ace79f",
+      "component": "eduprestamo:src/seed.js",
+      "project": "eduprestamo",
+      "securityCategory": "auth",
+      "vulnerabilityProbability": "HIGH",
+      "status": "TO_REVIEW",
+      "line": 11,
+      "message": "Review this potentially hardcoded credential.",
+      "author": "",
+      "creationDate": "2026-09-18T22:23:33+0000",
+      "updateDate": "2026-09-18T22:23:33+0000",
+      "textRange": {
+        "startLine": 11,
+        "endLine": 11,
+        "startOffset": 14,
+        "endOffset": 25
+      },
+      "flows": [],
+      "ruleKey": "javascript:S2068",
+      "messageFormattings": []
+    },
+    {
+      "key": "03b955ad-64a0-4118-a7b0-833602b118a3",
+      "component": "eduprestamo:src/seed.js",
+      "project": "eduprestamo",
+      "securityCategory": "auth",
+      "vulnerabilityProbability": "HIGH",
+      "status": "TO_REVIEW",
+      "line": 17,
+      "message": "Review this potentially hardcoded credential.",
+      "author": "",
+      "creationDate": "2026-09-18T22:23:33+0000",
+      "updateDate": "2026-09-18T22:23:33+0000",
+      "textRange": {
+        "startLine": 17,
+        "endLine": 17,
+        "startOffset": 14,
+        "endOffset": 27
+      },
+      "flows": [],
+      "ruleKey": "javascript:S2068",
+      "messageFormattings": []
+    },
+    {
+      "key": "0e6bf9d8-1715-438c-93c7-ed956eb890e0",
+      "component": "eduprestamo:src/validation.js",
+      "project": "eduprestamo",
+      "securityCategory": "auth",
+      "vulnerabilityProbability": "HIGH",
+      "status": "TO_REVIEW",
+      "line": 35,
+      "message": "Review this potentially hardcoded credential.",
+      "author": "",
+      "creationDate": "2026-09-18T22:23:33+0000",
+      "updateDate": "2026-09-18T22:23:33+0000",
+      "textRange": {
+        "startLine": 35,
+        "endLine": 35,
+        "startOffset": 16,
+        "endOffset": 81
+      },
+      "flows": [],
+      "ruleKey": "javascript:S2068",
+      "messageFormattings": []
+    },
+    {
+      "key": "d4aea00a-60b0-4908-ad36-69ba2e813341",
+      "component": "eduprestamo:src/validation.js",
+      "project": "eduprestamo",
+      "securityCategory": "dos",
+      "vulnerabilityProbability": "MEDIUM",
+      "status": "TO_REVIEW",
+      "line": 3,
+      "message": "Make sure the regex used here, which is vulnerable to super-linear runtime due to backtracking, cannot lead to denial of service.",
+      "author": "",
+      "creationDate": "2026-09-18T22:23:33+0000",
+      "updateDate": "2026-09-18T22:23:33+0000",
+      "textRange": {
+        "startLine": 3,
+        "endLine": 3,
+        "startOffset": 22,
+        "endOffset": 50
+      },
+      "flows": [],
+      "ruleKey": "javascript:S5852",
+      "messageFormattings": []
+    }
+  ],
+  "components": [
+    {
+      "key": "eduprestamo",
+      "qualifier": "TRK",
+      "name": "EduPrestamo",
+      "longName": "EduPrestamo"
+    },
+    {
+      "key": "eduprestamo:src/seed.js",
+      "qualifier": "FIL",
+      "name": "seed.js",
+      "longName": "src/seed.js",
+      "path": "src/seed.js"
+    },
+    {
+      "key": "eduprestamo:src/validation.js",
+      "qualifier": "FIL",
+      "name": "validation.js",
+      "longName": "src/validation.js",
+      "path": "src/validation.js"
+    }
+  ]
+}

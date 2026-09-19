@@ -1,0 +1,9 @@
+{
+  "generatedAt": "2026-09-18T22:34:00Z",
+  "projectKey": "eduprestamo",
+  "gitCommit": "e19835e9a506b14579cbc3feb13f3a75607fac6b",
+  "serverImage": "sonarqube:10.6.0-community",
+  "scannerImage": "sonarsource/sonar-scanner-cli:5.0.1",
+  "serverUrl": "http://127.0.0.1:9001",
+  "note": "El token efimero fue revocado al terminar y no se guarda en estos reportes."
+}
