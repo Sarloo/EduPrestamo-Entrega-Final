@@ -13,11 +13,14 @@ const userRoutes = require('./routes/users');
 const reportRoutes = require('./routes/reports');
 
 function corsOriginOption(value) {
-  if (!value || value === 'same-origin') return false;
-  if (value === '*') return '*';
-  const allowed = value.split(',').map((origin) => origin.trim()).filter(Boolean);
+  const configured = value || 'same-origin';
+  const allowed = configured === '*' || configured === 'same-origin'
+    ? []
+    : configured.split(',').map((origin) => origin.trim()).filter(Boolean);
   return (origin, callback) => {
-    if (!origin || allowed.includes(origin)) return callback(null, true);
+    if (configured === '*') return callback(null, true);
+    if (!origin || configured === 'same-origin') return callback(null, false);
+    if (allowed.includes(origin)) return callback(null, true);
     return callback(new Error('Origen no permitido por CORS.'));
   };
 }

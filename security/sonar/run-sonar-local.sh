@@ -8,10 +8,16 @@ umask 077
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
+SCAN_DIR="${SONAR_SCAN_DIR:-${PROJECT_DIR}}"
+[[ -d "${SCAN_DIR}" ]] || {
+  printf '[sonar-local] ERROR: no existe SONAR_SCAN_DIR=%s.\n' "${SCAN_DIR}" >&2
+  exit 1
+}
+SCAN_DIR="$(cd -- "${SCAN_DIR}" && pwd)"
 REPORT_DIR="${PROJECT_DIR}/reports/quality/sonarqube"
-PROPERTIES_FILE="${PROJECT_DIR}/sonar-project.properties"
-COVERAGE_FILE="${PROJECT_DIR}/reports/coverage/lcov.info"
-REPORT_TASK_FILE="${PROJECT_DIR}/.scannerwork/report-task.txt"
+PROPERTIES_FILE="${SCAN_DIR}/sonar-project.properties"
+COVERAGE_FILE="${SCAN_DIR}/reports/coverage/lcov.info"
+REPORT_TASK_FILE="${SCAN_DIR}/.scannerwork/report-task.txt"
 
 SONAR_CONTAINER_NAME="${SONAR_CONTAINER_NAME:-eduprestamo-sonarqube}"
 SONAR_IMAGE="${SONAR_IMAGE:-sonarqube:10.6.0-community}"
@@ -69,7 +75,7 @@ netrc_escape() {
 }
 
 cleanup_secrets() {
-  local exit_code=$?
+  local exit_code="${1:-0}"
   trap - EXIT
 
   if [[ -n "${TOKEN_NAME}" && -n "${ADMIN_NETRC}" && -f "${ADMIN_NETRC}" ]]; then
@@ -90,7 +96,7 @@ cleanup_secrets() {
   exit "${exit_code}"
 }
 
-trap cleanup_secrets EXIT
+trap 'cleanup_secrets "$?"' EXIT
 
 curl_admin() {
   curl --silent --show-error --fail --noproxy '*' \
@@ -265,7 +271,7 @@ else
     --name "${SONAR_CONTAINER_NAME}" \
     --label "${MANAGED_LABEL}=${MANAGED_LABEL_VALUE}" \
     --restart unless-stopped \
-    "${PLATFORM_ARGS[@]}" \
+    ${PLATFORM_ARGS[@]+"${PLATFORM_ARGS[@]}"} \
     --publish "127.0.0.1:${SONAR_PORT}:9000" \
     --env SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true \
     --volume "${SONAR_DATA_VOLUME}:/opt/sonarqube/data" \
@@ -323,13 +329,13 @@ log "Ejecutando sonar-scanner para ${PROJECT_KEY}..."
 export SONAR_TOKEN="${TOKEN}"
 docker run --rm \
   --name "eduprestamo-sonar-scanner-$$" \
-  "${PLATFORM_ARGS[@]}" \
+  ${PLATFORM_ARGS[@]+"${PLATFORM_ARGS[@]}"} \
   --add-host host.docker.internal:host-gateway \
   --user "$(id -u):$(id -g)" \
   --env SONAR_TOKEN \
   --env "SONAR_HOST_URL=${SONAR_SCANNER_HOST_URL}" \
   --env SONAR_USER_HOME=/tmp/.sonar \
-  --volume "${PROJECT_DIR}:/usr/src" \
+  --volume "${SCAN_DIR}:/usr/src" \
   --workdir /usr/src \
   "${SONAR_SCANNER_IMAGE}" \
   -Dsonar.qualitygate.wait=false
@@ -352,6 +358,10 @@ fetch_json "/api/qualitygates/project_status" "${REPORT_DIR}/quality-gate.json" 
 fetch_json "/api/issues/search" "${REPORT_DIR}/issues.json" \
   --data-urlencode "componentKeys=${PROJECT_KEY}" \
   --data-urlencode "resolved=false" \
+  --data-urlencode "ps=500"
+
+fetch_json "/api/hotspots/search" "${REPORT_DIR}/security-hotspots.json" \
+  --data-urlencode "projectKey=${PROJECT_KEY}" \
   --data-urlencode "ps=500"
 
 cp -f -- "${REPORT_TASK_FILE}" "${REPORT_DIR}/report-task.txt"

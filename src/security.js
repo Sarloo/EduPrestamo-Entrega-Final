@@ -22,7 +22,7 @@ function signAccessToken(user, secret, expiresIn) {
 function createAuthentication({ db, jwtSecret }) {
   function authenticate(req, _res, next) {
     const authorization = req.get('authorization');
-    if (!authorization || !authorization.startsWith('Bearer ')) {
+    if (!authorization?.startsWith('Bearer ')) {
       return next(new AppError(401, 'AUTH_REQUIRED', 'Se requiere un token de acceso.'));
     }
 

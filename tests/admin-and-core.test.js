@@ -171,15 +171,17 @@ describe('utilidades y persistencia', () => {
   });
 
   test('aplica una lista CORS y rechaza origenes ajenos', () => {
-    expect(corsOriginOption('same-origin')).toBe(false);
-    expect(corsOriginOption('*')).toBe('*');
+    const sameOrigin = corsOriginOption('same-origin');
+    const wildcard = corsOriginOption('*');
     const verifyOrigin = corsOriginOption('https://uno.example, https://dos.example');
+    expect(typeof sameOrigin).toBe('function');
+    expect(typeof wildcard).toBe('function');
 
     return new Promise((resolve, reject) => {
       verifyOrigin(undefined, (error, accepted) => {
         try {
           expect(error).toBeNull();
-          expect(accepted).toBe(true);
+          expect(accepted).toBe(false);
           verifyOrigin('https://uno.example', (allowedError, allowed) => {
             try {
               expect(allowedError).toBeNull();
@@ -187,7 +189,23 @@ describe('utilidades y persistencia', () => {
               verifyOrigin('https://mal.example', (deniedError) => {
                 try {
                   expect(deniedError).toBeInstanceOf(Error);
-                  resolve();
+                  wildcard('https://cualquiera.example', (wildcardError, wildcardAllowed) => {
+                    try {
+                      expect(wildcardError).toBeNull();
+                      expect(wildcardAllowed).toBe(true);
+                      sameOrigin('https://externo.example', (sameError, sameAllowed) => {
+                        try {
+                          expect(sameError).toBeNull();
+                          expect(sameAllowed).toBe(false);
+                          resolve();
+                        } catch (assertionError) {
+                          reject(assertionError);
+                        }
+                      });
+                    } catch (assertionError) {
+                      reject(assertionError);
+                    }
+                  });
                 } catch (assertionError) {
                   reject(assertionError);
                 }

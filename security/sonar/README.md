@@ -66,6 +66,7 @@ El directorio `reports/quality/sonarqube/` contiene:
   vulnerabilidades y demas medidas disponibles.
 - `quality-gate.json`: estado y condiciones del Quality Gate.
 - `issues.json`: incidencias abiertas del proyecto.
+- `security-hotspots.json`: hotspots de seguridad que requieren revisión manual.
 - `compute-engine-task.json`: resultado del procesamiento del analisis.
 - `report-task.txt`: identificadores tecnicos de la ejecucion.
 - `metadata.json`: fecha UTC, commit analizado e imagenes utilizadas; no incluye
@@ -84,6 +85,7 @@ exportan los JSON.
 | `SONAR_IMAGE` | `sonarqube:10.6.0-community` | Version del servidor. |
 | `SONAR_SCANNER_IMAGE` | `sonarsource/sonar-scanner-cli:5.0.1` | Version del scanner. |
 | `SONAR_PLATFORM` | vacio | Plataforma Docker opcional, por ejemplo `linux/amd64`. |
+| `SONAR_SCAN_DIR` | raiz del repositorio | Copia materializada del mismo commit que se analizara, util en carpetas sincronizadas por macOS. |
 | `SONAR_START_TIMEOUT` | `360` | Segundos maximos para iniciar SonarQube. |
 | `SONAR_ANALYSIS_TIMEOUT` | `300` | Segundos maximos para procesar el analisis. |
 | `SONAR_ADMIN_PASSWORD_FILE` | vacio | Archivo privado con la clave local de admin. |
@@ -108,4 +110,3 @@ Eliminar tambien los volumenes y restablecer por completo la instancia local:
 
 La limpieza comprueba etiquetas de propiedad y se niega a borrar contenedores o
 volumenes ajenos que tengan el mismo nombre.
-
