@@ -148,6 +148,16 @@ describe('ciclo de prestamos', () => {
       .set('Authorization', sessions.admin.authorization);
     expect(filtered.body.data).toHaveLength(1);
 
+    await context.api
+      .post('/api/loans')
+      .set('Authorization', sessions.admin.authorization)
+      .send({ resourceId: 2, quantity: 1, purpose: 'Solicitud personal del administrador' });
+    const adminLoans = await context.api
+      .get(`/api/loans?userId=${sessions.admin.user.id}`)
+      .set('Authorization', sessions.admin.authorization);
+    expect(adminLoans.body.data).toHaveLength(1);
+    expect(adminLoans.body.data[0].user.email).toBe('admin@eduprestamo.local');
+
     const missing = await context.api
       .get('/api/loans/999')
       .set('Authorization', sessions.admin.authorization);

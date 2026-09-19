@@ -284,6 +284,35 @@ textarea:focus-visible {
   color: var(--muted);
 }
 
+.auth-switch {
+  margin: 18px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.auth-switch button {
+  padding: 0;
+  color: var(--teal-dark);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.register-role-note {
+  margin: -2px 0 18px;
+  padding: 10px 12px;
+  color: var(--teal-dark);
+  background: var(--teal-soft);
+  border-radius: 9px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .field {
   display: grid;
   margin-bottom: 18px;

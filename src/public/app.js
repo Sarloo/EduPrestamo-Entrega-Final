@@ -19,6 +19,15 @@
     loginPassword: document.querySelector('#login-password'),
     loginError: document.querySelector('#login-error'),
     loginSubmit: document.querySelector('#login-submit'),
+    loginPanel: document.querySelector('#login-panel'),
+    registerPanel: document.querySelector('#register-panel'),
+    registerForm: document.querySelector('#register-form'),
+    registerName: document.querySelector('#register-name'),
+    registerEmail: document.querySelector('#register-email'),
+    registerPassword: document.querySelector('#register-password'),
+    registerPasswordConfirmation: document.querySelector('#register-password-confirmation'),
+    registerError: document.querySelector('#register-error'),
+    registerSubmit: document.querySelector('#register-submit'),
     adminNavigation: document.querySelector('#admin-navigation'),
     pendingCount: document.querySelector('#pending-nav-count'),
     userName: document.querySelector('#user-name'),
@@ -154,11 +163,23 @@
     }).format(new Date());
   }
 
+  function setAuthMode(mode) {
+    const registering = mode === 'register';
+    elements.loginPanel.hidden = registering;
+    elements.registerPanel.hidden = !registering;
+    elements.loginError.hidden = true;
+    elements.registerError.hidden = true;
+    elements.authView.setAttribute('aria-labelledby', registering ? 'register-title' : 'login-title');
+    window.setTimeout(() => {
+      (registering ? elements.registerName : elements.loginEmail).focus();
+    }, 0);
+  }
+
   function showLogin() {
     elements.authView.hidden = false;
     elements.appShell.hidden = true;
-    elements.loginError.hidden = true;
     elements.loginPassword.value = '';
+    setAuthMode('login');
   }
 
   function logout(notify = true) {
@@ -185,7 +206,9 @@
   }
 
   function resourceConditionBadge(condition) {
-    const style = condition === 'DAMAGED' ? 'badge--danger' : condition === 'FAIR' ? 'badge--warning' : '';
+    let style = '';
+    if (condition === 'DAMAGED') style = 'badge--danger';
+    else if (condition === 'FAIR') style = 'badge--warning';
     return `<span class="badge ${style}">${escapeHtml(labels.condition[condition] || condition)}</span>`;
   }
 
@@ -198,15 +221,17 @@
     showPageLoading('Consultando el inventario...');
     const response = await api('/api/resources');
     state.resources = response.data;
+    const categoryOptions = [...new Set(state.resources.map((item) => item.category))]
+      .sort((a, b) => a.localeCompare(b, 'es'))
+      .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+      .join('');
     elements.pageContent.setAttribute('aria-busy', 'false');
     elements.pageContent.innerHTML = `
       <div class="filter-bar">
         <input id="catalog-search" type="search" placeholder="Buscar por nombre, código o descripción" aria-label="Buscar recursos" />
         <select id="catalog-category" aria-label="Filtrar por categoría">
           <option value="">Todas las categorías</option>
-          ${[...new Set(state.resources.map((item) => item.category))]
-            .sort((a, b) => a.localeCompare(b, 'es'))
-            .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('')}
+          ${categoryOptions}
         </select>
       </div>
       <div id="resource-results"></div>`;
@@ -231,7 +256,7 @@
       container.innerHTML = emptyState('No encontramos recursos', 'Prueba con otra búsqueda o categoría.');
       return;
     }
-    container.innerHTML = `<div class="resource-grid">${filtered.map((resource) => `
+    const resourceCards = filtered.map((resource) => `
       <article class="resource-card">
         <div class="resource-card__top">
           <span class="resource-card__code">${escapeHtml(resource.code)}</span>
@@ -247,7 +272,8 @@
             ${resource.quantityAvailable < 1 ? 'No disponible' : 'Solicitar'}
           </button>
         </div>
-      </article>`).join('')}</div>`;
+      </article>`).join('');
+    container.innerHTML = `<div class="resource-grid">${resourceCards}</div>`;
   }
 
   async function renderMyLoans() {
@@ -257,7 +283,8 @@
       description: 'Revisa solicitudes, fechas de devolución y el historial de movimientos.',
     });
     showPageLoading('Consultando tus solicitudes...');
-    const response = await api('/api/loans');
+    const query = state.user.role === 'ADMIN' ? `?userId=${state.user.id}` : '';
+    const response = await api(`/api/loans${query}`);
     state.loans = response.data;
     elements.pageContent.setAttribute('aria-busy', 'false');
     if (!state.loans.length) {
@@ -377,10 +404,13 @@
     const response = await api('/api/loans');
     state.loans = response.data;
     updatePendingCount();
+    const statusOptions = Object.entries(labels.status)
+      .map(([value, label]) => `<option value="${value}">${label}</option>`)
+      .join('');
     elements.pageContent.setAttribute('aria-busy', 'false');
     elements.pageContent.innerHTML = state.loans.length
       ? `<div class="filter-bar"><input id="loan-search" type="search" placeholder="Buscar usuario o recurso" aria-label="Buscar solicitudes" />
-          <select id="loan-status" aria-label="Filtrar por estado"><option value="">Todos los estados</option>${Object.entries(labels.status).map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}</select></div><div id="loan-results"></div>`
+          <select id="loan-status" aria-label="Filtrar por estado"><option value="">Todos los estados</option>${statusOptions}</select></div><div id="loan-results"></div>`
       : emptyState('Sin solicitudes', 'Las solicitudes de usuarios aparecerán aquí.');
     if (!state.loans.length) return;
     const search = document.querySelector('#loan-search');
@@ -555,6 +585,43 @@
     }
   });
 
+  elements.registerForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    elements.registerError.hidden = true;
+    if (!elements.registerForm.reportValidity()) return;
+    if (elements.registerPassword.value !== elements.registerPasswordConfirmation.value) {
+      elements.registerError.textContent = 'Las contraseñas no coinciden.';
+      elements.registerError.hidden = false;
+      return;
+    }
+    setLoading(elements.registerSubmit, true);
+    try {
+      const response = await api('/api/auth/register', {
+        method: 'POST',
+        body: {
+          name: elements.registerName.value,
+          email: elements.registerEmail.value,
+          password: elements.registerPassword.value,
+        },
+      });
+      state.token = response.data.accessToken;
+      localStorage.setItem('eduprestamo_token', state.token);
+      elements.registerForm.reset();
+      showAuthenticated(response.data.user);
+      window.location.hash = 'catalogo';
+      await renderRoute();
+      toast('Cuenta creada correctamente. Tu rol es Usuario.');
+    } catch (error) {
+      elements.registerError.textContent = errorMessage(error);
+      elements.registerError.hidden = false;
+    } finally {
+      setLoading(elements.registerSubmit, false);
+    }
+  });
+
+  document.querySelector('#show-register').addEventListener('click', () => setAuthMode('register'));
+  document.querySelector('#show-login').addEventListener('click', () => setAuthMode('login'));
+
   document.querySelectorAll('.demo-credential').forEach((button) => {
     button.addEventListener('click', () => {
       elements.loginEmail.value = button.dataset.demoEmail;
@@ -577,29 +644,45 @@
   document.querySelector('#sidebar-scrim').addEventListener('click', () => document.body.classList.remove('sidebar-open'));
   window.addEventListener('hashchange', renderRoute);
 
-  document.addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-action]');
-    if (!button) return;
+  async function handleActionButton(button) {
     const id = Number(button.dataset.id);
     const resource = state.resources.find((item) => item.id === id);
     const loan = state.loans.find((item) => item.id === id);
-    if (button.dataset.action === 'request' && resource) requestDialog(resource);
-    if (button.dataset.action === 'new-resource') resourceDialog();
-    if (button.dataset.action === 'edit-resource' && resource) resourceDialog(resource);
-    if (button.dataset.action === 'delete-resource' && resource) {
-      await directAction(`/api/resources/${id}`, `¿Dar de baja ${resource.name}?`, 'Recurso dado de baja.');
-    }
-    if (button.dataset.action === 'approve-loan' && loan) approveDialog(loan);
-    if (button.dataset.action === 'reject-loan' && loan) rejectDialog(loan);
-    if (button.dataset.action === 'deliver-loan' && loan) {
-      await directAction(`/api/loans/${id}/deliver`, '¿Confirmar que el recurso fue entregado?', 'Entrega registrada.');
-    }
-    if (button.dataset.action === 'return-loan' && loan) {
-      await directAction(`/api/loans/${id}/return`, '¿Confirmar la devolución del recurso?', 'Devolución registrada.');
-    }
-    if (button.dataset.action === 'cancel-loan' && loan) {
-      await directAction(`/api/loans/${id}/cancel`, '¿Cancelar esta solicitud pendiente?', 'Solicitud cancelada.');
-    }
+    const actions = {
+      request: async () => resource && requestDialog(resource),
+      'new-resource': async () => resourceDialog(),
+      'edit-resource': async () => resource && resourceDialog(resource),
+      'delete-resource': async () => resource && directAction(
+        `/api/resources/${id}`,
+        `¿Dar de baja ${resource.name}?`,
+        'Recurso dado de baja.',
+      ),
+      'approve-loan': async () => loan && approveDialog(loan),
+      'reject-loan': async () => loan && rejectDialog(loan),
+      'deliver-loan': async () => loan && directAction(
+        `/api/loans/${id}/deliver`,
+        '¿Confirmar que el recurso fue entregado?',
+        'Entrega registrada.',
+      ),
+      'return-loan': async () => loan && directAction(
+        `/api/loans/${id}/return`,
+        '¿Confirmar la devolución del recurso?',
+        'Devolución registrada.',
+      ),
+      'cancel-loan': async () => loan && directAction(
+        `/api/loans/${id}/cancel`,
+        '¿Cancelar esta solicitud pendiente?',
+        'Solicitud cancelada.',
+      ),
+    };
+    const action = actions[button.dataset.action];
+    if (action) await action();
+  }
+
+  document.addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+    await handleActionButton(button);
   });
 
   elements.dialogForm.addEventListener('submit', async (event) => {

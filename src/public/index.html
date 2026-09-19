@@ -57,61 +57,110 @@
 
         <div class="auth-panel">
           <div class="login-card">
-            <div class="login-card__heading">
-              <p class="eyebrow">Acceso seguro</p>
-              <h2 id="login-title">Inicia sesión</h2>
-              <p>Usa tu cuenta institucional para continuar.</p>
-            </div>
-
-            <div id="login-error" class="alert alert--error" role="alert" hidden></div>
-
-            <form id="login-form" method="post" action="/api/auth/login" novalidate>
-              <div class="field">
-                <label for="login-email">Correo electrónico</label>
-                <input
-                  id="login-email"
-                  name="email"
-                  type="email"
-                  autocomplete="username"
-                  inputmode="email"
-                  placeholder="nombre@eduprestamo.local"
-                  required
-                />
-                <p class="field__error" data-error-for="email"></p>
+            <div id="login-panel">
+              <div class="login-card__heading">
+                <p class="eyebrow">Acceso seguro</p>
+                <h2 id="login-title">Inicia sesión</h2>
+                <p>Usa tu cuenta institucional para continuar.</p>
               </div>
 
-              <div class="field">
-                <label for="login-password">Contraseña</label>
-                <div class="password-field">
+              <div id="login-error" class="alert alert--error" role="alert" hidden></div>
+
+              <form id="login-form" method="post" action="/api/auth/login" novalidate>
+                <div class="field">
+                  <label for="login-email">Correo electrónico</label>
                   <input
-                    id="login-password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    placeholder="Ingresa tu contraseña"
+                    id="login-email"
+                    name="email"
+                    type="email"
+                    autocomplete="username"
+                    inputmode="email"
+                    placeholder="nombre@ejemplo.com"
                     required
                   />
-                  <button
-                    id="toggle-password"
-                    class="icon-button icon-button--inside"
-                    type="button"
-                    aria-label="Mostrar contraseña"
-                    aria-pressed="false"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-                      <circle cx="12" cy="12" r="2.5" />
-                    </svg>
-                  </button>
+                  <p class="field__error" data-error-for="email"></p>
                 </div>
-                <p class="field__error" data-error-for="password"></p>
+
+                <div class="field">
+                  <label for="login-password">Contraseña</label>
+                  <div class="password-field">
+                    <input
+                      id="login-password"
+                      name="password"
+                      type="password"
+                      autocomplete="current-password"
+                      placeholder="Ingresa tu contraseña"
+                      required
+                    />
+                    <button
+                      id="toggle-password"
+                      class="icon-button icon-button--inside"
+                      type="button"
+                      aria-label="Mostrar contraseña"
+                      aria-pressed="false"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                        <circle cx="12" cy="12" r="2.5" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p class="field__error" data-error-for="password"></p>
+                </div>
+
+                <button id="login-submit" class="button button--primary button--wide" type="submit">
+                  <span class="button__label">Entrar al sistema</span>
+                  <span class="button__spinner" aria-hidden="true"></span>
+                </button>
+              </form>
+
+              <p class="auth-switch">
+                ¿No tienes cuenta?
+                <button id="show-register" type="button">Crear una cuenta</button>
+              </p>
+            </div>
+
+            <div id="register-panel" hidden>
+              <div class="login-card__heading">
+                <p class="eyebrow">Cuenta nueva</p>
+                <h2 id="register-title">Crea tu cuenta</h2>
+                <p>Registra tus datos para solicitar recursos escolares.</p>
               </div>
 
-              <button id="login-submit" class="button button--primary button--wide" type="submit">
-                <span class="button__label">Entrar al sistema</span>
-                <span class="button__spinner" aria-hidden="true"></span>
-              </button>
-            </form>
+              <div id="register-error" class="alert alert--error" role="alert" hidden></div>
+
+              <form id="register-form" method="post" action="/api/auth/register" novalidate>
+                <div class="field">
+                  <label for="register-name">Nombre completo</label>
+                  <input id="register-name" name="name" type="text" autocomplete="name" minlength="2" maxlength="100" required />
+                </div>
+                <div class="field">
+                  <label for="register-email">Correo electrónico</label>
+                  <input id="register-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="nombre@ejemplo.com" maxlength="254" required />
+                </div>
+                <div class="field">
+                  <label for="register-password">Contraseña</label>
+                  <input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
+                  <p class="field__hint">Mínimo 8 caracteres, con mayúscula, minúscula y número.</p>
+                </div>
+                <div class="field">
+                  <label for="register-password-confirmation">Confirmar contraseña</label>
+                  <input id="register-password-confirmation" name="passwordConfirmation" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
+                </div>
+
+                <p class="register-role-note">Las cuentas creadas aquí reciben únicamente el rol de usuario.</p>
+
+                <button id="register-submit" class="button button--primary button--wide" type="submit">
+                  <span class="button__label">Crear cuenta</span>
+                  <span class="button__spinner" aria-hidden="true"></span>
+                </button>
+              </form>
+
+              <p class="auth-switch">
+                ¿Ya tienes cuenta?
+                <button id="show-login" type="button">Iniciar sesión</button>
+              </p>
+            </div>
 
             <section class="demo-access" aria-labelledby="demo-title">
               <div class="demo-access__heading">
@@ -208,10 +257,10 @@
         </nav>
 
         <div class="sidebar__footer">
-          <div id="connection-status" class="connection-status" role="status">
+          <output id="connection-status" class="connection-status">
             <span class="connection-status__dot" aria-hidden="true"></span>
             <span>Con conexión</span>
-          </div>
+          </output>
           <p>Versión de demostración 1.0</p>
         </div>
       </aside>
