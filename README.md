@@ -5,6 +5,7 @@ Sistema web para administrar recursos educativos y su ciclo de préstamo. La sol
 ## Funcionalidad implementada
 
 - Autenticación con JWT, contraseñas protegidas con bcrypt y tokens con emisor, audiencia y caducidad verificables.
+- Registro público de cuentas con asignación obligatoria del rol `USER`.
 - Autorización por roles: los usuarios consultan el catálogo y gestionan sus solicitudes; los administradores controlan recursos, préstamos, usuarios y reportes.
 - Bloqueo temporal después de tres intentos fallidos de inicio de sesión.
 - Inventario con búsqueda, categorías, condición física, existencias y baja lógica.
@@ -32,7 +33,7 @@ Sistema web para administrar recursos educativos y su ciclo de préstamo. La sol
 ```text
 Navegador / SPA
        |
-       | HTTPS + JWT Bearer
+       | HTTP local o HTTPS mediante proxy + JWT Bearer
        v
 Express 5
   |-- Helmet, CSP, CORS y límite JSON de 32 KiB
@@ -176,12 +177,12 @@ La configuración de Jest detiene el proceso si statements, branches, functions 
 
 | Métrica | Resultado | Umbral |
 |---|---:|---:|
-| Statements | 94.71 % | 80 % |
-| Branches | 85.33 % | 80 % |
-| Functions | 98.59 % | 80 % |
-| Lines | 95.89 % | 80 % |
+| Statements | 94.86 % | 80 % |
+| Branches | 85.71 % | 80 % |
+| Functions | 98.64 % | 80 % |
+| Lines | 96.02 % | 80 % |
 
-Consulta el [reporte HTML de cobertura](reports/coverage/index.html) y el [resumen JSON](reports/coverage/coverage-summary.json). Estas cifras deben regenerarse con el commit final antes de entregar.
+Consulta el [reporte HTML de cobertura](reports/coverage/index.html), el [resumen JSON](reports/coverage/coverage-summary.json) y el [resumen de la ejecución](reports/unit/test-summary.md). La cobertura corresponde al backend; la interfaz ubicada en `src/public/` no forma parte del cálculo de Jest.
 
 ## CI/CD con GitHub Actions
 
@@ -192,6 +193,8 @@ El workflow [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) se acti
 3. `sonar`: análisis opcional con SonarCloud o SonarQube cuando existe `SONAR_TOKEN`.
 
 El despliegue es efímero y exclusivo para validación: el contenedor y su red se eliminan al finalizar. Los reportes se conservan como artefactos del workflow durante 30 días.
+
+Las etapas principales se validaron localmente. Aún no existe una ejecución remota porque el proyecto no está conectado a un repositorio de GitHub. Consulta la [evidencia local de CI/CD](reports/cicd/local-validation.md).
 
 Para habilitar Sonar en GitHub configura:
 
@@ -226,7 +229,7 @@ bash security/zap/run-zap.sh
 
 La automatización utiliza la imagen oficial `ghcr.io/zaproxy/zaproxy:stable` y escribe HTML, JSON y Markdown en `reports/security/zap/`. Para otro destino define `ZAP_TARGET_URL`; para alcanzar rutas protegidas proporciona un JWT de prueba de corta duración en `ZAP_AUTH_TOKEN` sin guardarlo en el repositorio. Las reglas hacen que alertas de XSS y SQLi bloqueen la etapa.
 
-> **Resultado final ZAP: PENDIENTE DE ACTUALIZAR CON EL REPORTE REAL.** Registrar aquí fecha, versión/imagen, commit analizado, URL del ambiente autorizado, alertas por severidad, correcciones y resultado de la revalidación. No interpretar este marcador como evidencia de una ejecución.
+El análisis final se ejecutó con OWASP ZAP 2.17.0 contra el entorno local autorizado. Registró 0 alertas altas, 2 medias, 0 bajas y 4 informativas. No encontró XSS ni inyección SQL. Las alertas medias corresponden a la ausencia de token CSRF en una aplicación que autentica con JWT Bearer y al uso de HTTP en el entorno local. Consulta el [resumen del análisis](reports/security/zap/scan-summary.md) y los reportes originales en `reports/security/zap/`.
 
 Consulta las [instrucciones de ZAP](security/zap/README.md) y el [directorio de evidencia](reports/security/zap/README.md).
 
@@ -234,7 +237,7 @@ Consulta las [instrucciones de ZAP](security/zap/README.md) y el [directorio de 
 
 `sonar-project.properties` conecta fuentes, pruebas y `reports/coverage/lcov.info`. Con un servidor y token válidos puede ejecutarse el analizador oficial o dejar que el job `sonar` lo haga en GitHub Actions.
 
-> **Resultado final Sonar: PENDIENTE DE ACTUALIZAR CON EL ANÁLISIS REAL.** Registrar Quality Gate, bugs, vulnerabilidades, hotspots revisados, code smells, deuda técnica, duplicación y commit analizado. No asignar valores hasta exportarlos desde la API o el tablero.
+El análisis local con SonarQube 10.6.0 obtuvo Quality Gate aprobado, 0 bugs, 0 vulnerabilidades, 0 code smells, 0 minutos de deuda técnica, 0.0 % de duplicación y 91.6 % de cobertura general. Los cuatro hotspots se revisaron y documentaron; dos pertenecen a credenciales exclusivamente demo, uno es un falso positivo en la validación de contraseñas y otro queda limitado por la longitud máxima del correo. Consulta el [resumen SonarQube](reports/quality/sonarqube/analysis-summary.md) y la [revisión de hotspots](reports/quality/sonarqube/hotspot-review.md).
 
 Consulta las [instrucciones para conservar la evidencia Sonar](reports/quality/sonarqube/README.md).
 
@@ -243,11 +246,11 @@ Consulta las [instrucciones para conservar la evidencia Sonar](reports/quality/s
 | Evidencia | Ruta |
 |---|---|
 | Cobertura Jest | [`reports/coverage/`](reports/coverage/) |
-| Pruebas unitarias | [`reports/unit/`](reports/unit/) |
-| Reportes ZAP | [`reports/security/zap/`](reports/security/zap/) |
-| Reportes Sonar | [`reports/quality/sonarqube/`](reports/quality/sonarqube/) |
-| Pipeline | [`reports/cicd/`](reports/cicd/) |
-| Despliegue de prueba | [`reports/deployment/`](reports/deployment/) |
+| Pruebas unitarias y de integración | [`reports/unit/test-summary.md`](reports/unit/test-summary.md) |
+| Reportes ZAP | [`reports/security/zap/scan-summary.md`](reports/security/zap/scan-summary.md) |
+| Reportes Sonar | [`reports/quality/sonarqube/analysis-summary.md`](reports/quality/sonarqube/analysis-summary.md) |
+| Pipeline | [`reports/cicd/local-validation.md`](reports/cicd/local-validation.md) |
+| Despliegue de prueba | [`reports/deployment/container-evidence.md`](reports/deployment/container-evidence.md) |
 | Capturas de la interfaz | [`docs/assets/`](docs/assets/) |
 
 Capturas disponibles:
