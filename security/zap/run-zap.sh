@@ -11,7 +11,7 @@ output_directory="${project_root}/reports/security/zap"
 mkdir -p "${output_directory}"
 # The official image runs as its own unprivileged user and must write reports
 # through the bind mount. This only changes the generated-report directory.
-chmod 0777 "${output_directory}"
+}"
 
 docker_options=(
   --rm
@@ -41,5 +41,4 @@ if [[ -n "${ZAP_AUTH_TOKEN:-}" ]]; then
 fi
 
 docker run "${docker_options[@]}" "${zap_image}" \
-  zap-full-scan.py "${zap_options[@]}"
-
+  zap-full-scan.py "${zap_options[@]}""/chmod -R a+rwX "${output_directory}"}
