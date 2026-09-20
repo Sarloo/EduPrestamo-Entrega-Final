@@ -28,6 +28,7 @@ describe('administracion y nucleo de la aplicacion', () => {
     const spa = await context.api.get('/ruta-de-interfaz');
     expect(spa.status).toBe(200);
     expect(spa.text).toContain('EduPréstamo');
+    expect(spa.headers['cache-control']).toBe('no-cache, no-store, must-revalidate');
 
     const missing = await context.api.get('/api/no-existe');
     expect(missing.status).toBe(404);

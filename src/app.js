@@ -83,10 +83,16 @@ function createApp(options = {}) {
   app.use(express.static(publicDirectory, {
     etag: true,
     maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
+    setHeaders: (res, filePath) => {
+      if (path.basename(filePath) === 'index.html') {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    },
   }));
 
   app.use((req, res, next) => {
     if (req.method === 'GET' && !req.path.startsWith('/api/')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.sendFile(path.join(publicDirectory, 'index.html'));
     }
     return next();
