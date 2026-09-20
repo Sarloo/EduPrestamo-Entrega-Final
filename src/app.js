@@ -40,6 +40,10 @@ function createApp(options = {}) {
 
   app.use(helmet({
     crossOriginEmbedderPolicy: { policy: 'require-corp' },
+    // TLS is not terminated by this Node process in the EC2 classroom deployment.
+    // Enabling HSTS or CSP upgrades over plain HTTP makes browsers request static
+    // assets through unavailable HTTPS and leaves the interface without styles.
+    hsts: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -52,6 +56,7 @@ function createApp(options = {}) {
         objectSrc: ["'none'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'"],
+        upgradeInsecureRequests: null,
       },
     },
   }));

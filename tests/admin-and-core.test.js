@@ -22,6 +22,8 @@ describe('administracion y nucleo de la aplicacion', () => {
     expect(health.body.status).toBe('ok');
     expect(health.headers['cross-origin-embedder-policy']).toBe('require-corp');
     expect(health.headers['permissions-policy']).toContain('camera=()');
+    expect(health.headers['content-security-policy']).not.toContain('upgrade-insecure-requests');
+    expect(health.headers['strict-transport-security']).toBeUndefined();
 
     const spa = await context.api.get('/ruta-de-interfaz');
     expect(spa.status).toBe(200);
