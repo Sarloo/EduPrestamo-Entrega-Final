@@ -28,6 +28,7 @@
     registerPasswordConfirmation: document.querySelector('#register-password-confirmation'),
     registerError: document.querySelector('#register-error'),
     registerSubmit: document.querySelector('#register-submit'),
+    demoAccess: document.querySelector('#demo-access'),
     adminNavigation: document.querySelector('#admin-navigation'),
     pendingCount: document.querySelector('#pending-nav-count'),
     userName: document.querySelector('#user-name'),
@@ -705,6 +706,9 @@
   document.querySelectorAll('[data-dialog-close]').forEach((button) => button.addEventListener('click', closeDialog));
 
   async function initialize() {
+    const localDemoHosts = new Set(['localhost', '127.0.0.1', '::1']);
+    elements.demoAccess.hidden = !localDemoHosts.has(window.location.hostname);
+
     if (!state.token) {
       showLogin();
       return;
