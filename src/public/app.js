@@ -6,6 +6,7 @@
     user: null,
     resources: [],
     loans: [],
+    materialRequests: [],
     summary: null,
     route: 'catalogo',
     dialogSubmit: null,
@@ -31,6 +32,7 @@
     demoAccess: document.querySelector('#demo-access'),
     adminNavigation: document.querySelector('#admin-navigation'),
     pendingCount: document.querySelector('#pending-nav-count'),
+    pendingMaterialCount: document.querySelector('#material-request-nav-count'),
     userName: document.querySelector('#user-name'),
     userRole: document.querySelector('#user-role'),
     userAvatar: document.querySelector('#user-avatar'),
@@ -62,6 +64,7 @@
       DELIVERED: 'Entregado',
       RETURNED: 'Devuelto',
       CANCELLED: 'Cancelado',
+      FULFILLED: 'Disponible',
     },
   };
 
@@ -254,7 +257,10 @@
     const container = document.querySelector('#resource-results');
     if (!container) return;
     if (!filtered.length) {
-      container.innerHTML = emptyState('No encontramos recursos', 'Prueba con otra búsqueda o categoría.');
+      container.innerHTML = `${emptyState('No encontramos recursos', 'Puedes pedir al administrador que agregue el material que necesitas.')}
+        <div class="page-heading__actions page-heading__actions--center">
+          <button class="button button--primary" type="button" data-action="new-material-request">Solicitar material nuevo</button>
+        </div>`;
       return;
     }
     const resourceCards = filtered.map((resource) => `
@@ -337,12 +343,14 @@
       description: 'Indicadores actuales del inventario, las solicitudes y los usuarios.',
     });
     showPageLoading('Calculando indicadores...');
-    const [summaryResponse, loansResponse] = await Promise.all([
-      api('/api/reports/summary'), api('/api/loans'),
+    const [summaryResponse, loansResponse, materialRequestsResponse] = await Promise.all([
+      api('/api/reports/summary'), api('/api/loans'), api('/api/material-requests'),
     ]);
     state.summary = summaryResponse.data;
     state.loans = loansResponse.data;
+    state.materialRequests = materialRequestsResponse.data;
     updatePendingCount();
+    updateMaterialPendingCount();
     const { inventory, loans, overdue } = state.summary;
     elements.pageContent.setAttribute('aria-busy', 'false');
     elements.pageContent.innerHTML = `
@@ -431,6 +439,54 @@
     update();
   }
 
+  async function renderMaterialRequests() {
+    const admin = state.user.role === 'ADMIN';
+    pageHeader({
+      eyebrow: admin ? 'Ampliación del catálogo' : 'Material no disponible',
+      title: admin ? 'Solicitudes de material' : 'Solicitar material',
+      description: admin
+        ? 'Revisa lo que necesitan los usuarios y agrega los materiales aprobados al catálogo.'
+        : 'Pide un material que aún no aparece en el catálogo y consulta la respuesta del administrador.',
+      actions: admin
+        ? ''
+        : '<button class="button button--primary" type="button" data-action="new-material-request">Nueva solicitud</button>',
+    });
+    showPageLoading('Consultando solicitudes de material...');
+    const response = await api('/api/material-requests');
+    state.materialRequests = response.data;
+    updateMaterialPendingCount();
+    elements.pageContent.setAttribute('aria-busy', 'false');
+    if (!state.materialRequests.length) {
+      elements.pageContent.innerHTML = admin
+        ? emptyState('Sin solicitudes de material', 'Las peticiones de los usuarios aparecerán aquí.')
+        : emptyState('Aún no has pedido materiales', 'Usa Nueva solicitud para enviar una petición al administrador.');
+      return;
+    }
+    elements.pageContent.innerHTML = `<div class="panel"><div class="table-wrap"><table class="data-table">
+      <thead><tr><th>Material</th>${admin ? '<th>Solicitante</th>' : ''}<th>Cantidad</th><th>Estado</th><th>Registro</th><th>Acciones</th></tr></thead>
+      <tbody>${state.materialRequests.map((request) => `<tr>
+        <td><span class="table-primary"><strong>${escapeHtml(request.name)}</strong><small>${escapeHtml(request.category)} · ${escapeHtml(request.justification)}</small>${request.resource ? `<small>Agregado como ${escapeHtml(request.resource.code)}</small>` : ''}${request.rejectionReason ? `<small>Motivo: ${escapeHtml(request.rejectionReason)}</small>` : ''}</span></td>
+        ${admin ? `<td><span class="table-primary"><strong>${escapeHtml(request.user.name)}</strong><small>${escapeHtml(request.user.email)}</small></span></td>` : ''}
+        <td>${request.quantity}</td>
+        <td>${statusBadge(request.status)}</td>
+        <td>${formatDate(request.requestedAt)}</td>
+        <td>${materialRequestActions(request, admin)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>`;
+  }
+
+  function materialRequestActions(request, admin) {
+    const actions = [];
+    if (!admin && request.status === 'PENDING') {
+      actions.push(`<button class="button button--ghost button--compact" data-action="cancel-material-request" data-id="${request.id}">Cancelar</button>`);
+    }
+    if (admin && request.status === 'PENDING') {
+      actions.push(`<button class="button button--primary button--compact" data-action="fulfill-material-request" data-id="${request.id}">Agregar al catálogo</button>`);
+      actions.push(`<button class="button button--danger button--compact" data-action="reject-material-request" data-id="${request.id}">Rechazar</button>`);
+    }
+    return `<div class="row-actions">${actions.join('') || '<span class="badge badge--muted">Sin acciones</span>'}</div>`;
+  }
+
   function updatePendingCount() {
     if (!state.user || state.user.role !== 'ADMIN') return;
     const pending = state.loans.filter((loan) => loan.status === 'PENDING').length;
@@ -438,12 +494,22 @@
     elements.pendingCount.hidden = pending === 0;
   }
 
+  function updateMaterialPendingCount() {
+    if (!state.user || state.user.role !== 'ADMIN') {
+      elements.pendingMaterialCount.hidden = true;
+      return;
+    }
+    const pending = state.materialRequests.filter((request) => request.status === 'PENDING').length;
+    elements.pendingMaterialCount.textContent = String(pending);
+    elements.pendingMaterialCount.hidden = pending === 0;
+  }
+
   async function renderRoute() {
     if (!state.user) return;
     const requested = (window.location.hash || '#catalogo').slice(1);
     const adminRoutes = ['resumen', 'recursos', 'solicitudes'];
     state.route = adminRoutes.includes(requested) && state.user.role !== 'ADMIN' ? 'catalogo' : requested;
-    if (!['catalogo', 'mis-prestamos', ...adminRoutes].includes(state.route)) state.route = 'catalogo';
+    if (!['catalogo', 'mis-prestamos', 'materiales-solicitados', ...adminRoutes].includes(state.route)) state.route = 'catalogo';
     if (window.location.hash !== `#${state.route}`) window.history.replaceState(null, '', `#${state.route}`);
 
     document.querySelectorAll('[data-route]').forEach((link) => {
@@ -455,6 +521,7 @@
     try {
       if (state.route === 'catalogo') await renderCatalog();
       if (state.route === 'mis-prestamos') await renderMyLoans();
+      if (state.route === 'materiales-solicitados') await renderMaterialRequests();
       if (state.route === 'resumen') await renderSummary();
       if (state.route === 'recursos') await renderAdminResources();
       if (state.route === 'solicitudes') await renderAdminLoans();
@@ -498,19 +565,51 @@
     });
   }
 
-  function resourceDialog(resource = null) {
-    const editing = Boolean(resource);
+  function materialRequestDialog() {
     openDialog({
-      title: editing ? 'Editar recurso' : 'Nuevo recurso',
-      description: editing ? 'Actualiza la ficha y las existencias del material.' : 'Registra un material en el inventario escolar.',
-      submitLabel: editing ? 'Guardar cambios' : 'Crear recurso',
+      title: 'Solicitar material nuevo',
+      description: 'Describe el material que no encontraste para que el administrador pueda agregarlo.',
+      submitLabel: 'Enviar al administrador',
+      content: `<div class="form-grid">
+        <div class="field field--wide"><label for="material-name">Nombre del material</label><input id="material-name" name="name" minlength="2" maxlength="120" required /></div>
+        <div class="field"><label for="material-category">Categoría</label><input id="material-category" name="category" minlength="2" maxlength="80" placeholder="Ej. Laboratorio" required /></div>
+        <div class="field"><label for="material-quantity">Cantidad necesaria</label><input id="material-quantity" name="quantity" type="number" min="1" value="1" required /></div>
+        <div class="field field--wide"><label for="material-justification">¿Para qué lo necesitas?</label><textarea id="material-justification" name="justification" minlength="5" maxlength="500" placeholder="Describe la clase, práctica o actividad" required></textarea><p class="field__hint">Mínimo 5 caracteres.</p></div>
+      </div>`,
+      onSubmit: async (data) => {
+        await api('/api/material-requests', {
+          method: 'POST',
+          body: {
+            name: data.get('name'),
+            category: data.get('category'),
+            quantity: Number(data.get('quantity')),
+            justification: data.get('justification'),
+          },
+        });
+        toast('Solicitud enviada al administrador.');
+        window.location.hash = 'materiales-solicitados';
+      },
+    });
+  }
+
+  function resourceDialog(resource = null, materialRequest = null) {
+    const editing = Boolean(resource);
+    const fulfilling = Boolean(materialRequest);
+    openDialog({
+      title: editing ? 'Editar recurso' : fulfilling ? 'Agregar material solicitado' : 'Nuevo recurso',
+      description: editing
+        ? 'Actualiza la ficha y las existencias del material.'
+        : fulfilling
+          ? `Solicitud de ${materialRequest.user.name}: ${materialRequest.justification}`
+          : 'Registra un material en el inventario escolar.',
+      submitLabel: editing ? 'Guardar cambios' : fulfilling ? 'Agregar y atender solicitud' : 'Crear recurso',
       content: `<div class="form-grid">
         <div class="field"><label for="resource-code">Código</label><input id="resource-code" name="code" maxlength="30" value="${escapeHtml(resource?.code || '')}" required /></div>
-        <div class="field"><label for="resource-category">Categoría</label><input id="resource-category" name="category" maxlength="80" value="${escapeHtml(resource?.category || '')}" required /></div>
-        <div class="field field--wide"><label for="resource-name">Nombre</label><input id="resource-name" name="name" maxlength="120" value="${escapeHtml(resource?.name || '')}" required /></div>
+        <div class="field"><label for="resource-category">Categoría</label><input id="resource-category" name="category" maxlength="80" value="${escapeHtml(resource?.category || materialRequest?.category || '')}" required /></div>
+        <div class="field field--wide"><label for="resource-name">Nombre</label><input id="resource-name" name="name" maxlength="120" value="${escapeHtml(resource?.name || materialRequest?.name || '')}" required /></div>
         <div class="field"><label for="resource-condition">Condición</label><select id="resource-condition" name="condition">${Object.entries(labels.condition).map(([value, label]) => `<option value="${value}" ${resource?.condition === value ? 'selected' : ''}>${label}</option>`).join('')}</select></div>
-        <div class="field"><label for="resource-total">Cantidad total</label><input id="resource-total" name="quantityTotal" type="number" min="0" value="${resource?.quantityTotal ?? 1}" required /></div>
-        <div class="field field--wide"><label for="resource-description">Descripción</label><textarea id="resource-description" name="description" maxlength="500">${escapeHtml(resource?.description || '')}</textarea></div>
+        <div class="field"><label for="resource-total">Cantidad total</label><input id="resource-total" name="quantityTotal" type="number" min="0" value="${resource?.quantityTotal ?? materialRequest?.quantity ?? 1}" required /></div>
+        <div class="field field--wide"><label for="resource-description">Descripción</label><textarea id="resource-description" name="description" maxlength="500">${escapeHtml(resource?.description || (materialRequest ? `Solicitado para: ${materialRequest.justification}` : ''))}</textarea></div>
       </div>`,
       onSubmit: async (data) => {
         const body = {
@@ -518,10 +617,30 @@
           condition: data.get('condition'), quantityTotal: Number(data.get('quantityTotal')),
           description: data.get('description'),
         };
-        await api(editing ? `/api/resources/${resource.id}` : '/api/resources', {
+        const path = fulfilling
+          ? `/api/material-requests/${materialRequest.id}/fulfill`
+          : editing
+            ? `/api/resources/${resource.id}`
+            : '/api/resources';
+        await api(path, {
           method: editing ? 'PATCH' : 'POST', body,
         });
-        toast(editing ? 'Recurso actualizado.' : 'Recurso registrado.');
+        toast(editing ? 'Recurso actualizado.' : fulfilling ? 'Material agregado y solicitud atendida.' : 'Recurso registrado.');
+      },
+    });
+  }
+
+  function rejectMaterialRequestDialog(materialRequest) {
+    openDialog({
+      title: 'Rechazar solicitud de material',
+      description: `La respuesta será visible para ${materialRequest.user.name}.`,
+      submitLabel: 'Confirmar rechazo',
+      content: '<div class="field"><label for="material-rejection-reason">Motivo</label><textarea id="material-rejection-reason" name="reason" minlength="3" maxlength="500" required></textarea></div>',
+      onSubmit: async (data) => {
+        await api(`/api/material-requests/${materialRequest.id}/reject`, {
+          method: 'PATCH', body: { reason: data.get('reason') },
+        });
+        toast('Solicitud de material rechazada.');
       },
     });
   }
@@ -649,8 +768,17 @@
     const id = Number(button.dataset.id);
     const resource = state.resources.find((item) => item.id === id);
     const loan = state.loans.find((item) => item.id === id);
+    const materialRequest = state.materialRequests.find((item) => item.id === id);
     const actions = {
       request: async () => resource && requestDialog(resource),
+      'new-material-request': async () => materialRequestDialog(),
+      'fulfill-material-request': async () => materialRequest && resourceDialog(null, materialRequest),
+      'reject-material-request': async () => materialRequest && rejectMaterialRequestDialog(materialRequest),
+      'cancel-material-request': async () => materialRequest && directAction(
+        `/api/material-requests/${id}/cancel`,
+        `¿Cancelar la solicitud de ${materialRequest.name}?`,
+        'Solicitud de material cancelada.',
+      ),
       'new-resource': async () => resourceDialog(),
       'edit-resource': async () => resource && resourceDialog(resource),
       'delete-resource': async () => resource && directAction(
