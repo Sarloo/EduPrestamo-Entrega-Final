@@ -11,6 +11,7 @@ const { resourceRoutes } = require('./routes/resources');
 const { loanRoutes } = require('./routes/loans');
 const userRoutes = require('./routes/users');
 const reportRoutes = require('./routes/reports');
+const { materialRequestRoutes } = require('./routes/material-requests');
 
 function corsOriginOption(value) {
   const configured = value || 'same-origin';
@@ -79,6 +80,7 @@ function createApp(options = {}) {
   app.use('/api/loans', loanRoutes(dependencies));
   app.use('/api/users', userRoutes(dependencies));
   app.use('/api/reports', reportRoutes(dependencies));
+  app.use('/api/material-requests', materialRequestRoutes(dependencies));
 
   app.use(express.static(publicDirectory, {
     etag: true,

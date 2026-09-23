@@ -60,11 +60,31 @@ function initializeSchema(db) {
       updated_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS material_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      quantity INTEGER NOT NULL CHECK (quantity > 0),
+      justification TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'PENDING' CHECK (
+        status IN ('PENDING', 'FULFILLED', 'REJECTED', 'CANCELLED')
+      ),
+      requested_at TEXT NOT NULL,
+      reviewed_by INTEGER REFERENCES users(id),
+      reviewed_at TEXT,
+      rejection_reason TEXT,
+      resource_id INTEGER REFERENCES resources(id),
+      updated_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_resources_active ON resources(active);
     CREATE INDEX IF NOT EXISTS idx_resources_code ON resources(code);
     CREATE INDEX IF NOT EXISTS idx_loans_user ON loans(user_id);
     CREATE INDEX IF NOT EXISTS idx_loans_resource ON loans(resource_id);
     CREATE INDEX IF NOT EXISTS idx_loans_status ON loans(status);
+    CREATE INDEX IF NOT EXISTS idx_material_requests_user ON material_requests(user_id);
+    CREATE INDEX IF NOT EXISTS idx_material_requests_status ON material_requests(status);
   `);
 }
 
